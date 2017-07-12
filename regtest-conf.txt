@@ -1,0 +1,16 @@
+$ cat .bitcoin/bitcoin.conf
+
+regtest=1
+dnsseed=0
+upnp=0
+
+server=1
+listen=1
+txindex=1
+
+whitelist=127.0.0.1
+
+rpcallowip=0.0.0.0/0
+rpcuser=bitcoinrpc
+rpcpassword=<passwordhere>
+

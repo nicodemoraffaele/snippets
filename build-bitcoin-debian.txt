@@ -1,0 +1,19 @@
+$ git clone https://github.com/bitcoin/bitcoin
+
+$ git tag -l
+…
+
+$ git checkout tags/v0.14.2
+
+$ sudo apt-get install build-essential libtool autotools-dev automake pkg-config libssl-dev libevent-dev bsdmainutils
+
+
+$ sudo apt-get install libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-program-options-dev libboost-test-dev libboost-thread-dev
+ 
+$ ./autogen.sh
+
+$ ./configure --without-gui
+
+$ make
+
+$ sudo make install # optional

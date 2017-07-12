@@ -1,0 +1,1 @@
+bitcoin-cli -rpcconnect=40.68.213.193 -rpcport=18332 -rpcuser=bitcoinrpc -rpcpassword=<yourpassword>
