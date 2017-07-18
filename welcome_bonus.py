@@ -12,10 +12,10 @@ class MyResource(resource.Resource):
         print(request)
         address = request.postpath[0].decode('utf-8')
         print(address)
-        isvalid = proxy.validateaddress(address)['isvalid']
+        isvalid = proxy._call('validateaddress', str(address))['isvalid']
         print(isvalid)
         if isvalid:
-            proxy.sendtoaddress(address, 0.0001)
+            proxy.sendtoaddress(address, 100000)
             return 'sent'
         else:
             return 'invalid address'
