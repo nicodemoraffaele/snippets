@@ -14,3 +14,8 @@ rpcallowip=0.0.0.0/0
 rpcuser=bitcoinrpc
 rpcpassword=<passwordhere>
 
+minrelaytxfee=0.00000001
+mintxfee=0.00000001
+blockmintxfee=0.00000001
+blockprioritysize=500000
+debug=mempool
