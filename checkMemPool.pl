@@ -1,42 +1,66 @@
 use 5.022;
 use warnings;
+use Getopt::Long;
 use experimental 'signatures';
+use Time::HiRes qw(gettimeofday);
+use Time::Piece;
 
+Getopt::Long::Configure qw(gnu_getopt);
+
+#default params
 my $secondToWait = 2;
 my $bc = "bitcoin-cli";
+my $verbose = 0;
+
+#get params
+GetOptions
+(
+        'secondToWait|s=s'     => \$secondToWait,
+        'bc|b=s'        => \$bc,
+		'verbose|v=s'	=> \$verbose
+) or die "err options!\n";
+
+#output params
+debug("Executing script $0\n");
+debug("parameters:");
+debug("bc: $bc");
+debug("secondToWait: $secondToWait");
+debug("verbose: $verbose");
 
 while (1)
 {
 	my $mempoolTXs = join '', exe("getmempoolinfo | jq .size");
 	if (not ($mempoolTXs > 2))
 	{
-		say "There are NO tx in mempool";
+		debug("There are NO tx in mempool");
 		next;
 	}
 	
-	say "There are tx in mempool: " . $mempoolTXs;		
-	say "Store mempool txs in a var";
+	debug("There are tx in mempool: " . $mempoolTXs);		
+	debug("Store mempool txs in a var");
 	my @currTXS = exe("getrawmempool");
 	my %currTXS = map{$_ =>1} @currTXS;
-	say "currTXS: " . keys(%currTXS);
-	say "Wait $secondToWait seconds...";
+	debug("currTXS: " . keys(%currTXS));
+	debug("Wait $secondToWait seconds...");
 	sleep $secondToWait;
-	say "Store new mempool txs in a var";
+	debug("Store new mempool txs in a var");
 	my @newTXS = exe("getrawmempool");
-	say "new: " . scalar(@newTXS);
-	say "Check intersection between arrays";
+	debug("new: " . scalar(@newTXS));
+	debug("Check intersection between arrays");
 	my @intersection = grep{$currTXS{$_}} @newTXS;
-	say "If intersection greater then 0, generate 1";
-	say "Intersection length: " . $#intersection;
+	debug("If intersection greater then 0, generate new block");
+	debug("Intersection length: " . $#intersection);
 	if (@intersection)
 	{
-		say "Generate new block";
-		my $blockHash = exe("generate 1");
+		stamp("Generating new block at: " . localtime->strftime('%F %T'));
+		my @blockHash = exe("generate 1");
+		stamp("New block generated! Hash: " . $blockHash[1]);
 	}
 	else
 	{
-		say "No block to generate";
+		debug("No block to generate");
 	}
+	
 }
 
 #FUNCTIONS
@@ -44,4 +68,16 @@ sub exe($cmd)
 {
 	chomp(my @out = `$bc $cmd`);
 	return @out;
+}
+
+sub debug($data)
+{
+	say $data if $verbose == 1;
+}
+
+sub stamp($data)
+{
+    open my $fh, '>>', "checkMemPool.log" or die "error opening file $!\n";
+    flock $fh, 2;
+    say $fh "$$-" . $data;
 }
