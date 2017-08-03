@@ -2,7 +2,6 @@ import bitcoin.rpc
 from twisted.internet import reactor
 from twisted.web import resource, server
 
-
 class MyResource(resource.Resource):
     isLeaf = True
 
@@ -13,9 +12,17 @@ class MyResource(resource.Resource):
         address = request.postpath[0].decode('utf-8')
         print(address)
         isvalid = proxy._call('validateaddress', str(address))['isvalid']
+
         print(isvalid)
         if isvalid:
-            proxy.sendtoaddress(address, 100000)
+            try:
+                decode = request.postpath[1].decode('utf-8')
+                print(decode)
+                value = int(decode)
+            except:
+                value = 100000
+
+            proxy.sendtoaddress(address, value)
             return 'sent'
         else:
             return 'invalid address'
