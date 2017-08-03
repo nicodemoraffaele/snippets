@@ -32,6 +32,7 @@ while (1)
 	my $mempoolTXs = join '', exe("getmempoolinfo | jq .size");
 	if (not ($mempoolTXs > 2))
 	{
+		sleep 1;
 		debug("There are NO tx in mempool");
 		next;
 	}
