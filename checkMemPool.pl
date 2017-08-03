@@ -17,7 +17,7 @@ GetOptions
 (
         'secondToWait|s=s'     => \$secondToWait,
         'bc|b=s'        => \$bc,
-		'verbose|v=s'	=> \$verbose
+                'verbose|v=s'   => \$verbose
 ) or die "err options!\n";
 
 #output params
@@ -30,29 +30,42 @@ debug("verbose: $verbose");
 while (1)
 {
 	my $mempoolTXs = join '', exe("getmempoolinfo | jq .size");
-	if (not ($mempoolTXs > 2))
+	debug("MemPool size: " . $mempoolTXs . "\r");
+	if (not ($mempoolTXs > 0))
 	{
-		sleep 1;
-		debug("There are NO tx in mempool");
+		#sleep 1;
+		debug("There are NO tx in mempool\r");
 		next;
 	}
+
+	debug("There are tx in mempool: " . $mempoolTXs);
 	
-	debug("There are tx in mempool: " . $mempoolTXs);		
-	debug("Store mempool txs in a var");
-	my @currTXS = exe("getrawmempool");
-	my %currTXS = map{$_ =>1} @currTXS;
-	debug("currTXS: " . keys(%currTXS));
+	debug("Storing mempool txs in a variable...");
+	my @currTXS = grep {/[^\[\]]/} exe("getrawmempool");
+	debug("Before waiting: " . scalar(@currTXS));
+	
+	
 	debug("Wait $secondToWait seconds...");
 	sleep $secondToWait;
-	debug("Store new mempool txs in a var");
-	my @newTXS = exe("getrawmempool");
-	debug("new: " . scalar(@newTXS));
+	
+	debug("Storing new mempool txs in a var");
+	my @newTXS = grep {/[^\[\]]/} exe("getrawmempool");
+	debug("After waiting: " . scalar(@newTXS));
+	
 	debug("Check intersection between arrays");
+	my %currTXS = map{$_ =>1} @currTXS;
 	my @intersection = grep{$currTXS{$_}} @newTXS;
+	
 	debug("If intersection greater then 0, generate new block");
-	debug("Intersection length: " . $#intersection);
+	debug("Intersection: " . scalar(@intersection));
 	if (@intersection)
 	{
+		# debug("Log intersection..");
+		# foreach(@intersection)
+		# {
+			# debug("$_\r\n");
+		# }
+		
 		stamp("Generating new block at: " . localtime->strftime('%F %T'));
 		my @blockHash = exe("generate 1");
 		stamp("New block generated! Hash: " . $blockHash[1]);
@@ -61,23 +74,25 @@ while (1)
 	{
 		debug("No block to generate");
 	}
-	
+
 }
 
 #FUNCTIONS
 sub exe($cmd)
 {
-	chomp(my @out = `$bc $cmd`);
-	return @out;
+        chomp(my @out = `$bc $cmd`);
+        return @out;
 }
 
 sub debug($data)
 {
-	say $data if $verbose == 1;
+	$data .= "\n" if $data !~ /\r$/;		
+	print $data if $verbose == 1;
 }
 
 sub stamp($data)
 {
+	say $data;
     open my $fh, '>>', "checkMemPool.log" or die "error opening file $!\n";
     flock $fh, 2;
     say $fh "$$-" . $data;
