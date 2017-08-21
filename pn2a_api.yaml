@@ -1,0 +1,181 @@
+swagger: '2.0'
+info:
+  description: |
+    This is the PhoneNumberToAddress (pn2a) API to link a verified phone number to an address. The verification happens through a secret code send with an SMS.
+  version: 0.1.0
+  title: Phone number to address
+  #termsOfService: https://eternitywall.com/terms/
+  contact:
+    email: riccardo@eternitywall.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+schemes:
+ - https
+host: api.eternitywall.com
+basePath: /pn2a
+
+
+paths:
+  /sendsms/{number}:
+    post:
+      description: Send SMS to `{number}` with a code to verify
+      operationId: sendsms
+      consumes:
+      - application/x-www-form-urlencoded
+      produces:
+      - application/json
+      parameters:
+      - in: path
+        name: number
+        description: The mobile phone number to verify, it's a string containing only number and the international prefix code
+        required: true
+        type: string
+      responses:
+        200:
+          description: The possible outcome is "sent" meaning the server sent the SMS to `{number}`. If the SMS is already been sent recently, it will return already sent (code=1)
+          schema:
+            $ref: "#/definitions/Result"
+        400:
+          description: Bad input parameters
+      security:
+        - apikey: []
+
+  /verify/{number}:
+    post:
+      description: This method verify the `{secret_code}` sent via SMS with a previous call to */sendsms/`{number}`* match the one provided. If this happen the `{genesis_address}` of this phone is saved.
+      operationId: verify
+      consumes:
+      - application/x-www-form-urlencoded
+      produces:
+      - application/json
+      parameters:
+      - name: number
+        in: path
+        description: The mobile number to verify
+        required: true
+        type: string
+      - name: secret_code
+        in: formData
+        description: The secret code received by SMS
+        required: true
+        type: string
+      - name: genesis_address
+        in: formData
+        description: The genesis address linked to the phone number
+        required: true
+        type: string
+      - name: xpub
+        in: formData
+        description: The xpub linked to the phone number
+        required: false
+        type: string
+      responses:
+        200:
+          description: successful operation, or unsuccesfull if secret code doesn't match (code=2)
+          schema:
+            $ref: "#/definitions/Result"
+            example:
+              status: "ko"
+              message: "secret code does not match"
+              code: 2
+
+        400:
+          description: Bad input parameters
+      security:
+        - apikey: []
+
+  /address/{number}:
+    get:
+      description: this methods return the `{address}` of the owner of `{number}`. The address returned will be the last updated by the owner through this same endpoint with POST, or if the xpub is set in the method */verify/`{number}`* will return the first derivation wich is not used in the blockchain.
+      operationId: getaddress
+      consumes:
+      - application/x-www-form-urlencoded
+      produces:
+      - application/json
+      parameters:
+      - name: number
+        in: path
+        description: The mobile `{number}` of the user whom I requesting the `{address}`
+        required: true
+        type: string
+      responses:
+        200:
+          description: successful operation
+          schema:
+            example:
+              status: "ok"
+              value:
+                number: "00393291234567"
+                address: "n1o1Pqt2sCNwKiY5eYx5HXoFXn7VKcefXi"
+              code: 0
+      security:
+        - apikey: []
+
+
+    post:
+      description: This method update the current `{address}` of `{number}`, to avoid unauthorized updates it require authentication of the user obtained with a `{signature}` of the new `{address}` with the `{genesis_address}` private key
+      operationId: postaddress
+      consumes:
+      - application/x-www-form-urlencoded
+      produces:
+      - application/json
+      parameters:
+      - name: number
+        in: path
+        description: The mobile number to verify
+        required: true
+        type: string
+      responses:
+        200:
+          description: Successful operation
+          schema:
+            $ref: "#/definitions/Result"
+        400:
+          description: Bad input parameters
+        401:
+          description: Unauthorized, signature not verified
+      security:
+        - signature: []
+
+securityDefinitions:
+  apikey:
+    description: hello
+    type: apiKey
+    name: api_key
+    in: header
+  signature:
+    name: signature
+    type: string
+    in: header
+
+definitions:
+  Number:
+    type: "string"
+    format: "numeric"
+    description: "A telephone number with the international prefix"
+  Result:
+    type: "object"
+    properties:
+      status:
+        type: "string"
+        enum:
+        - "ok"
+        - "ko"
+        example: "ok"
+      message:
+        type: "string"
+        description: "a human readable message"
+        example: "Everything is ok!"
+      code:
+        type: integer
+        format: int32
+        description: "a number representing the status, if 0 is ok otherwise it depends on the method"
+        example: 0
+      value:
+        type: object
+        example: {}
+
+externalDocs:
+  description: Find out more about Swagger
+  url: http://swagger.io
